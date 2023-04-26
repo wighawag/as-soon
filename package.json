@@ -1,6 +1,6 @@
 {
 	"name": "as-soon",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "watch and execute",
 	"publishConfig": {
 		"access": "public"
