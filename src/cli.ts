@@ -2,7 +2,7 @@
 import { execFileSync } from 'child_process';
 import watcher from "@parcel/watcher";
 import path from "node:path";
-import { debounce } from "lodash-es";
+import { debounce } from "lodash";
 import { loadEnv } from "ldenv";
 
 const args = process.argv.slice(2);
