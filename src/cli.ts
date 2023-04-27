@@ -48,7 +48,9 @@ const commandToUse = command!;
 loadEnv({ mode: deploymentContext });
 
 async function _execute() {
-  execFileSync(commandToUse, commandArgs, { stdio: ["inherit", "inherit", "inherit"] });
+  try {
+    execFileSync(commandToUse, commandArgs, { stdio: ["inherit", "inherit", "inherit"] });
+  } catch { }
 }
 
 // let counter = 0;
