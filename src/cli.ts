@@ -45,7 +45,7 @@ if (!command) {
 }
 const commandToUse = command!;
 
-console.log(`"${commandToUse}"`);
+console.log(`"${commandToUse} ${commandArgs?.join(' ') || ''}"`);
 
 loadEnv({mode: deploymentContext});
 
