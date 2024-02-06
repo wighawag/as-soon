@@ -49,12 +49,13 @@ console.log(`"${commandToUse} ${commandArgs?.join(' ') || ''}"`);
 
 loadEnv({mode: deploymentContext});
 
-async function _execute() {
+function _execute() {
 	try {
 		execFileSync(commandToUse, commandArgs, {stdio: ['inherit', 'inherit', 'inherit']});
 	} catch (err) {
 		console.error('failed to execue', err);
 	}
+	console.log(`-------------------------------------`);
 }
 
 // let counter = 0;
@@ -100,19 +101,22 @@ async function listen(absolute_path: string, execute: () => void) {
 }
 
 async function main() {
-	const execute = debounce(_execute, 50);
+	const execute = debounce(_execute, 50, {
+		leading: true,
+	});
+	execute();
 	if (options['w']) {
 		const folders = options['w'].map((p) => path.normalize(path.join(process.cwd(), p)));
-		console.log(`listening on: ${folders.join(', ')}`);
 		for (const folder of folders) {
 			listen(folder, execute);
+
+			console.log(`Now listening on ${folder}`);
+			console.log(`-------------------------------------`);
 		}
 	} else {
 		const folder = path.normalize(process.cwd());
 		console.log(`listening on current folder: ${folder}`);
 		listen(folder, execute);
 	}
-
-	execute();
 }
 main();
