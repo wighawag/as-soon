@@ -45,6 +45,8 @@ if (!command) {
 }
 const commandToUse = command!;
 
+console.log(`"${commandToUse}"`);
+
 loadEnv({mode: deploymentContext});
 
 async function _execute() {
@@ -97,10 +99,18 @@ async function listen(absolute_path: string, execute: () => void) {
 
 async function main() {
 	const execute = debounce(_execute, 50);
-	for (const p of options['w']) {
-		const absolute_path = path.normalize(path.join(process.cwd(), p));
+	if (options['w']) {
+		console.log(`listening on: ${options['w'].join(', ')}`);
+		for (const p of options['w']) {
+			const absolute_path = path.normalize(path.join(process.cwd(), p));
+			listen(absolute_path, execute);
+		}
+	} else {
+		console.log(`listening on current folder`);
+		const absolute_path = path.normalize(process.cwd());
 		listen(absolute_path, execute);
 	}
+
 	execute();
 }
 main();
