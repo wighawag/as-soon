@@ -101,9 +101,7 @@ async function listen(absolute_path: string, execute: () => void) {
 }
 
 async function main() {
-	const execute = debounce(_execute, 50, {
-		leading: true,
-	});
+	const execute = debounce(_execute, 200);
 	execute();
 	if (options['w']) {
 		const folders = options['w'].map((p) => path.normalize(path.join(process.cwd(), p)));
