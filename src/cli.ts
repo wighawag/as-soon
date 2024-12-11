@@ -93,30 +93,34 @@ async function listen(absolute_path: string, execute: () => void) {
 	const exists = fs.existsSync(absolute_path);
 
 	if (exists) {
-		const isDirectory = exists && fs.statSync(absolute_path).isDirectory();
+		const isDirectory = fs.statSync(absolute_path).isDirectory();
 		if (isDirectory) {
+			// console.log(`listen for folder changes...`);
 			subscribe_folder(absolute_path, execute);
 		} else {
+			// console.log(`listen for file changes...`);
 			subscribe_folder(path.dirname(absolute_path), execute, absolute_path);
 		}
 	} else {
-		console.log(`${absolute_path} do not exist yet, listening on parent`);
-		let tmp_subscription: AsyncSubscription | undefined = await watcher.subscribe(
-			path.dirname(absolute_path),
-			(err, events) => {
-				for (const event of events) {
-					if (event.type === 'create' && path.normalize(event.path) === absolute_path) {
-						// console.log(`${absolute_path} just got created, listening for it...`);
-						tmp_subscription?.unsubscribe();
-						tmp_subscription = undefined;
-						// wrap in a timeout to ensure @parcel/watcher hook on the correct inode?
-						setTimeout((v) => {
-							listen(absolute_path, execute);
-						}, 500);
-					}
+		const parent = path.dirname(absolute_path);
+		if (!fs.existsSync(parent)) {
+			console.error(`cannot listen on folder who have no parent yet: ${absolute_path}`);
+			process.exit(1);
+		}
+		// console.log(`${absolute_path} do not exist yet, listening on parent : ${parent}`);
+		let tmp_subscription: AsyncSubscription | undefined = await watcher.subscribe(parent, (err, events) => {
+			for (const event of events) {
+				if (event.type === 'create' && path.normalize(event.path) === absolute_path) {
+					// console.log(`${absolute_path} just got created, listening for it...`);
+					tmp_subscription?.unsubscribe();
+					tmp_subscription = undefined;
+					// wrap in a timeout to ensure @parcel/watcher hook on the correct inode?
+					setTimeout((v) => {
+						listen(absolute_path, execute);
+					}, 500);
 				}
 			}
-		);
+		});
 	}
 }
 
