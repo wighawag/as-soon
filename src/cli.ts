@@ -59,28 +59,48 @@ function _execute() {
 }
 
 // let counter = 0;
-async function subscribe_target(absolute_path: string, execute: () => void) {
+async function subscribe_folder(absolute_path: string, execute: () => void, filename?: string) {
 	// const c = ++counter;
-	const p = path.relative(process.cwd(), absolute_path);
+	const p = path.relative(process.cwd(), absolute_path) || '.';
 	const subscription = await watcher.subscribe(absolute_path, (err, events) => {
 		// console.log(`Files changed under ${p} (${c})`);
-		console.log(`Files changed under ${p}`);
-		for (const event of events) {
-			if (event.type === 'delete' && event.path === absolute_path) {
-				subscription.unsubscribe();
-				listen(absolute_path, execute);
-				return;
+		if (filename) {
+			for (const event of events) {
+				if (path.normalize(event.path) === filename) {
+					console.log(`"${path.basename(filename)}" changed under ${p}`);
+					execute();
+				} else if (event.type === 'delete' && event.path === absolute_path) {
+					subscription.unsubscribe();
+					listen(filename, execute);
+					return;
+				}
 			}
+		} else {
+			console.log(`Files changed under ${p}`);
+			for (const event of events) {
+				if (event.type === 'delete' && event.path === absolute_path) {
+					subscription.unsubscribe();
+					listen(absolute_path, execute);
+					return;
+				}
+			}
+			execute();
 		}
-		execute();
 	});
 }
 
 async function listen(absolute_path: string, execute: () => void) {
-	if (fs.existsSync(absolute_path)) {
-		subscribe_target(absolute_path, execute);
+	const exists = fs.existsSync(absolute_path);
+
+	if (exists) {
+		const isDirectory = exists && fs.statSync(absolute_path).isDirectory();
+		if (isDirectory) {
+			subscribe_folder(absolute_path, execute);
+		} else {
+			subscribe_folder(path.dirname(absolute_path), execute, absolute_path);
+		}
 	} else {
-		// console.log(`${absolute_path} do not exist yet, listening on parent`)
+		console.log(`${absolute_path} do not exist yet, listening on parent`);
 		let tmp_subscription: AsyncSubscription | undefined = await watcher.subscribe(
 			path.dirname(absolute_path),
 			(err, events) => {
@@ -91,7 +111,7 @@ async function listen(absolute_path: string, execute: () => void) {
 						tmp_subscription = undefined;
 						// wrap in a timeout to ensure @parcel/watcher hook on the correct inode?
 						setTimeout((v) => {
-							subscribe_target(absolute_path, execute);
+							listen(absolute_path, execute);
 						}, 500);
 					}
 				}
