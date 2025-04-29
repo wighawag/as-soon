@@ -59,7 +59,13 @@ function _execute() {
 }
 
 // let counter = 0;
-async function subscribe_folder(absolute_path: string, execute: () => void, filename?: string) {
+async function subscribe_folder(
+	absolute_path: string,
+	execute: () => void,
+	options?: {filename?: string; ignore?: string[]}
+) {
+	const filename = options?.filename;
+	const ignore = options?.ignore;
 	// const c = ++counter;
 	const p = path.relative(process.cwd(), absolute_path) || '.';
 	const subscription = await watcher.subscribe(absolute_path, (err, events) => {
@@ -77,29 +83,35 @@ async function subscribe_folder(absolute_path: string, execute: () => void, file
 			}
 		} else {
 			console.log(`Files changed under ${p}`);
+			let allIgnored = true;
 			for (const event of events) {
 				if (event.type === 'delete' && event.path === absolute_path) {
 					subscription.unsubscribe();
 					listen(absolute_path, execute);
 					return;
 				}
+				if (allIgnored && ignore?.indexOf(path.basename(event.path)) == -1) {
+					allIgnored = false;
+				}
 			}
-			execute();
+			if (!allIgnored) {
+				execute();
+			}
 		}
 	});
 }
 
-async function listen(absolute_path: string, execute: () => void) {
+async function listen(absolute_path: string, execute: () => void, ignore?: string[]) {
 	const exists = fs.existsSync(absolute_path);
 
 	if (exists) {
 		const isDirectory = fs.statSync(absolute_path).isDirectory();
 		if (isDirectory) {
 			// console.log(`listen for folder changes...`);
-			subscribe_folder(absolute_path, execute);
+			subscribe_folder(absolute_path, execute, {ignore});
 		} else {
 			// console.log(`listen for file changes...`);
-			subscribe_folder(path.dirname(absolute_path), execute, absolute_path);
+			subscribe_folder(path.dirname(absolute_path), execute, {filename: absolute_path});
 		}
 	} else {
 		const parent = path.dirname(absolute_path);
@@ -116,7 +128,7 @@ async function listen(absolute_path: string, execute: () => void) {
 					tmp_subscription = undefined;
 					// wrap in a timeout to ensure @parcel/watcher hook on the correct inode?
 					setTimeout((v) => {
-						listen(absolute_path, execute);
+						listen(absolute_path, execute, ignore);
 					}, 500);
 				}
 			}
@@ -127,10 +139,11 @@ async function listen(absolute_path: string, execute: () => void) {
 async function main() {
 	const execute = debounce(_execute, 200);
 	execute();
+	const ignore = options['ignore'];
 	if (options['w']) {
 		const folders = options['w'].map((p) => path.normalize(path.join(process.cwd(), p)));
 		for (const folder of folders) {
-			listen(folder, execute);
+			listen(folder, execute, ignore);
 
 			console.log(`Now listening on ${folder}`);
 			console.log(`-------------------------------------`);
@@ -138,7 +151,7 @@ async function main() {
 	} else {
 		const folder = path.normalize(process.cwd());
 		console.log(`listening on current folder: ${folder}`);
-		listen(folder, execute);
+		listen(folder, execute, ignore);
 	}
 }
 main();
