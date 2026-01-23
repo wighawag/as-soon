@@ -115,7 +115,7 @@ async function listen(absolute_path: string, execute: () => void) {
 					tmp_subscription?.unsubscribe();
 					tmp_subscription = undefined;
 					// wrap in a timeout to ensure @parcel/watcher hook on the correct inode?
-					setTimeout((v) => {
+					setTimeout(() => {
 						listen(absolute_path, execute);
 					}, 500);
 				}
