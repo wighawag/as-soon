@@ -13,7 +13,6 @@ function error(msg: string) {
 	process.exit(1);
 }
 
-let deploymentContext = 'localhost';
 let argToConsume;
 let command: string | undefined;
 let commandArgs: string[] | undefined;
@@ -47,7 +46,12 @@ const commandToUse = command!;
 
 console.log(`"${commandToUse} ${commandArgs?.join(' ') || ''}"`);
 
-loadEnv({mode: deploymentContext});
+if (options['mode'] || options['m']) {
+	loadEnv({mode: options['mode'][0] || options['m'][0]});
+} else {
+	loadEnv();
+}
+
 
 function _execute() {
 	try {
