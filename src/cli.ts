@@ -3,7 +3,7 @@ import {execFileSync} from 'child_process';
 import watcher, {AsyncSubscription} from '@parcel/watcher';
 import path from 'node:path';
 import fs from 'node:fs';
-import {debounce} from 'lodash';
+import {debounce} from 'lodash-es';
 import {loadEnv} from 'ldenv';
 
 const args = process.argv.slice(2);
